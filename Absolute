@@ -7,7 +7,7 @@ float er;     //Proportional error for PI controller
 float eri;    //Integral error for PI controller
 
 //Values from encoder
-
+String p1 = ";";
 bool new_bit4 = 0;
 bool new_bit3 = 0;
 bool new_bit2 = 0;
@@ -19,6 +19,8 @@ bool old_bit3 = 0;
 bool old_bit2 = 0;
 bool old_bit1 = 0;
 bool old_bit0 = 0;
+
+float deg1 = 45;
 
 int old_value;
 int new_value;
@@ -47,6 +49,7 @@ void setup() {
   }
 
   deg = Serial.readString().toFloat(); //Reading the Input string from Serial port.
+  deg1 = deg;
   if (deg < 0)
   {
     analogWrite(3, 255);                                                  //change the direction of rotation by applying voltage to pin 3 of arduino
@@ -124,7 +127,7 @@ void loop() {
 
   if (finish == 1) {                             //this part of the code is for displaying the result
 
-    if (deg < 0) { //Else movement is CCW if deg is less than 0
+    if (deg1 < 0) { //Else movement is CCW if deg is less than 0
       if ((new_value - old_value) > 0) { //If no overflow new value should be larger than old value
         new_displacement = (new_value - old_value) * 11.25;
       } else { //Case with overflow
@@ -145,14 +148,21 @@ void loop() {
     Serial.print("shaft possition from optical absolute sensor from home position: ");
     Serial.println(home_displacement);
 
-    Serial.print("old decimal value: ");
-    Serial.println(old_value);
-
-    Serial.print("new decimal value: ");
-    Serial.println(new_value);
+//    Serial.print("old decimal value: ");
+//    Serial.println(old_value);
+//
+//    Serial.print("new decimal value: ");
+//    Serial.println(new_value);
 
     Serial.print("shaft displacement from optical absolute sensor: ");
     Serial.println(new_displacement);
+    Serial.print("direction read by sensor:  ");
+    if (deg1 < 0) {
+      Serial.println("CCW");
+    }
+    else {
+      Serial.println("CW");
+    }
 
     Serial.print("Shaft displacement from motor's builtin encoder: ");
     Serial.println(s * 360 / 228);                                      //every full Revolution of the shaft is associated with 228 counts of builtin
