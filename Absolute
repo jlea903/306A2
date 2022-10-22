@@ -6,6 +6,13 @@ int r = 0;    //indicator for reading builtin encoder to avoid the reading redun
 float er;     //Proportional error for PI controller
 float eri;    //Integral error for PI controller
 
+int valueTop = 0;
+int valueBot = 0;
+bool top = 0;
+bool bot = 0;
+bool topOLD = 0;
+bool botOLD = 0;
+
 //Values from encoder
 String p1 = ";";
 bool new_bit4 = 0;
@@ -20,7 +27,7 @@ bool old_bit2 = 0;
 bool old_bit1 = 0;
 bool old_bit0 = 0;
 
-float deg1 = 45;
+float dir = 45;
 
 int old_value;
 int new_value;
@@ -49,7 +56,7 @@ void setup() {
   }
 
   deg = Serial.readString().toFloat(); //Reading the Input string from Serial port.
-  deg1 = deg;
+
   if (deg < 0)
   {
     analogWrite(3, 255);                                                  //change the direction of rotation by applying voltage to pin 3 of arduino
@@ -67,13 +74,14 @@ float ki = .02;                               //integral gain of PI
 void loop() {
   // put your main code here, to run repeatedly:
 
+  //converting analog inputs to binary
   old_bit4 = signalConversion(analogRead(A4), old_bit4); //most significant bit
   old_bit3 = signalConversion(analogRead(A3), old_bit3);
   old_bit2 = signalConversion(analogRead(A2), old_bit2);
   old_bit1 = signalConversion(analogRead(A1), old_bit1);
   old_bit0 = signalConversion(analogRead(A0), old_bit0);
 
-  old_value = greyToDecimal5Bit(old_bit0, old_bit1, old_bit2, old_bit3, old_bit4);
+  old_value = greyToDecimal5Bit(old_bit0, old_bit1, old_bit2, old_bit3, old_bit4); //convert grey code to decimal
 
   t = millis();               //reading time
   t0 = t;                     //sving the current time in memory
@@ -110,24 +118,35 @@ void loop() {
       r = 0;                                                         // this indicator wont let this condition, (sm1 == sm2), to be counted until the next condition, (sm1 != sm2), happens
     }
 
+    //converting analog inputs to binary
     new_bit4 = signalConversion(analogRead(A4), new_bit4); //most significant bit
     new_bit3 = signalConversion(analogRead(A3), new_bit3);
     new_bit2 = signalConversion(analogRead(A2), new_bit2);
     new_bit1 = signalConversion(analogRead(A1), new_bit1);
     new_bit0 = signalConversion(analogRead(A0), new_bit0);
 
-    new_value = greyToDecimal5Bit(new_bit0, new_bit1, new_bit2, new_bit3, new_bit4);
+    new_value = greyToDecimal5Bit(new_bit0, new_bit1, new_bit2, new_bit3, new_bit4); //convert grey code to decimal
 
     t = millis();         //updating time
     finish = 1;           //cghanging finish indicator
 
   }
+   
+    //save and update top and bottom values
+    topOLD = top;
+    top = signalConversion(valueTop); //convert analog input to binary value
+    botOLD = bot;
+    bot = signalConversion(valueBot);
 
-
+    if (topOLD==0 && botOLD==0 && top==1) { //check to see if 00 appears after 01 or 10 to check direction
+      dir = 1; //1 = CCW
+    } else if (topOLD==0 && botOLD==0 && bot==1) {
+      dir = 0;
+    }
 
   if (finish == 1) {                             //this part of the code is for displaying the result
 
-    if (deg1 < 0) { //Else movement is CCW if deg is less than 0
+    if (dir < 0) { //Else movement is CCW if deg is less than 0
       if ((new_value - old_value) > 0) { //If no overflow new value should be larger than old value
         new_displacement = (new_value - old_value) * 11.25;
       } else { //Case with overflow
@@ -148,16 +167,10 @@ void loop() {
     Serial.print("shaft possition from optical absolute sensor from home position: ");
     Serial.println(home_displacement);
 
-//    Serial.print("old decimal value: ");
-//    Serial.println(old_value);
-//
-//    Serial.print("new decimal value: ");
-//    Serial.println(new_value);
-
     Serial.print("shaft displacement from optical absolute sensor: ");
     Serial.println(new_displacement);
     Serial.print("direction read by sensor:  ");
-    if (deg1 < 0) {
+    if (dir < 0) {
       Serial.println("CCW");
     }
     else {
@@ -184,8 +197,8 @@ void loop() {
 }
 
 bool signalConversion(int value, bool old) {
-  if (value >= 200) {
-    return 1;
+  if (value >= 200) { //threshold value of 200 as the low signal was around 50 and the high signal was around 350
+    return 1; //if signal above 200, it is white
   } else if (value <= 100) {
     return 0;
   } else {
@@ -197,7 +210,7 @@ int binaryToDecimal(bool bit0, bool bit1, bool bit2, bool bit3, bool bit4) { //x
   return bit0 * 1 + bit1 * 2 + bit2 * 4 + bit3 * 8 + bit4 * 16;
 }
 
-bool XOR (bool x1, bool x2) {
+bool XOR (bool x1, bool x2) { //exclusive or function
   if ((x1 && !x2) || (!x1 && x2)) {
     return 1;
   }
