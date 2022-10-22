@@ -65,22 +65,20 @@ void loop() {
   {
     valueTop = analogRead(A0);  // read the input pin
     valueBot = analogRead(A1);
-    //Serial.print(valueTop);
-    //Serial.print(",");
-    //Serial.println(valueBot);
-    
+
+    //save and update top and bottom values
     topOLD = top;
-    top = signalConversion(valueTop);
+    top = signalConversion(valueTop); //convert analog input to binary value
     botOLD = bot;
     bot = signalConversion(valueBot);
 
-    if (topOLD==0 && botOLD==0 && top==1) {
-      dir = 1;
+    if (topOLD==0 && botOLD==0 && top==1) { //check to see if 00 appears after 01 or 10 to check direction
+      dir = 1; //1 = CCW
     } else if (topOLD==0 && botOLD==0 && bot==1) {
       dir = 0;
     }
 
-    if (topOLD != top) {
+    if (topOLD != top) { //increase count on every change of LSB
       count++;
     }
 
@@ -122,10 +120,6 @@ void loop() {
 
     if (b % 100 == 0)
     {
-      //Serial.print("time in ms: ");
-      //Serial.print(b - t0);
-
-      //Serial.print("  spontaneous speed from builtin encoder:  ");
       rpmm = (s_2 / (2 * 114)) * 600;                       //formulation for rpm in each 100ms for PI controller
       //Serial.println(rpmm);
       s_2 = 0;                                              //reseting the counters of PI controller rpm meter
@@ -196,9 +190,9 @@ void loop() {
 }
 
 bool signalConversion(int value) {
-  if (value >= 150) {
-    return 1;
+  if (value >= 100) { //threshold value of 100 as the low signal was around 20 and the high signal was around 250
+    return 1; //if signal above 100, it is white
   } else {
-    return 0;
+    return 0; //if signal is below 100, it is black
   }
 }
